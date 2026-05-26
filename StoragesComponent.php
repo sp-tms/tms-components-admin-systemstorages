@@ -2,15 +2,18 @@
 
 namespace Apps\Tms\Components\System\Storages;
 
+use Apps\Core\Packages\Adminltetags\Traits\DynamicTable;
 use System\Base\BaseComponent;
 
 class StoragesComponent extends BaseComponent
 {
-    protected $package;
+    use DynamicTable;
+
+    protected $storages;
 
     public function initialize()
     {
-        //$this->package = $this->usePackage(?::class);
+        $this->storages = $this->usePackage('storages');
     }
 
     /**
@@ -18,7 +21,9 @@ class StoragesComponent extends BaseComponent
      */
     public function viewAction()
     {
-        return;
+        if (isset($this->getData()['uuid']) && $this->getData()['uuid'] !== '') {
+            return $this->storages->getFile($this->getData());
+        }
     }
 
     /**
@@ -26,29 +31,25 @@ class StoragesComponent extends BaseComponent
      */
     public function addAction()
     {
-        $this->requestIsPost();
+        if (isset($this->postData()['upload']) && $this->postData()['upload'] == true) {
+            if ($this->request->hasFiles()) {
+                if ($this->storages->storeFile()) {
+                    $this->view->responseData = $this->storages->packagesData->responseData;
+                }
 
-        //$this->package->add{?}($this->postData());
-
-        $this->addResponse(
-            $this->package->packagesData->responseMessage,
-            $this->package->packagesData->responseCode
-        );
+                $this->addResponse(
+                    $this->storages->packagesData->responseMessage,
+                    $this->storages->packagesData->responseCode
+                );
+            } else {
+                $this->addResponse('No files provided to upload or file provided cannot be uploaded due to error.', 1);
+            }
+        }
     }
 
-    /**
-     * @acl(name=update)
-     */
     public function updateAction()
     {
-        $this->requestIsPost();
-
-        //$this->package->update{?}($this->postData());
-
-        $this->addResponse(
-            $this->package->packagesData->responseMessage,
-            $this->package->packagesData->responseCode
-        );
+        //
     }
 
     /**
@@ -58,11 +59,13 @@ class StoragesComponent extends BaseComponent
     {
         $this->requestIsPost();
 
-        //$this->package->remove{?}($this->postData());
+        if (isset($this->postData()['uuid'])) {
+            $this->storages->removeFile($this->postData()['uuid']);
 
-        $this->addResponse(
-            $this->package->packagesData->responseMessage,
-            $this->package->packagesData->responseCode
-        );
+            $this->addResponse(
+                $this->storages->packagesData->responseMessage,
+                $this->storages->packagesData->responseCode
+            );
+        }
     }
 }
